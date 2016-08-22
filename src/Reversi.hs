@@ -13,8 +13,8 @@ type Col = Int
 data Piece = PieceX | PieceO deriving (Eq, Enum)
 
 instance Show Piece where
-    show PieceX = "x"
-    show PieceO = "o"
+    show PieceX = "\x25CF"
+    show PieceO = "\x25CB"
 
 type Tiles = Seq (Maybe Piece)
 
@@ -133,13 +133,13 @@ format game = columnRow ++ formatRows game
         columnRow = (intercalate sep $ cell " " : (map (\c -> cell [c]) $ take size ['A'..'Z'])) ++ sep ++ "\n" ++ divider
         formatRows game' = concatMap formatRow $ zip [0..size] $ rows game'
         formatRow (i, row) = (intercalate sep $ rowNumber i : (map (cell . formatTile i) (zip [0..] $ toList row))) ++ sep ++ "\n" ++ divider
-        formatTile rowIndex (colIndex, Nothing) = if elem (rowIndex, colIndex) valid then "_" else " "
+        formatTile rowIndex (colIndex, Nothing) = if elem (rowIndex, colIndex) valid then "\x00D7" else " "
         formatTile _ (_, Just piece) = show piece
         cell content = " " ++ content ++ " "
         cellWidth = 3
         rowNumber index = cell $ show $ succ index
-        sep = "|"
+        sep = "\x2502"
         -- the succ and +1 are because of the extra row number column
-        divider = (take (succ size * cellWidth + size + 1) $ repeat '-') ++ "\n"
+        divider = (take (succ size * cellWidth + size + 1) $ repeat '\x2500') ++ "\n"
         valid = validMoves game
 
