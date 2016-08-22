@@ -51,6 +51,13 @@ validMoves game = error "TODO"
     Return a list of those places
 -}
 
+-- | Returns the position of every piece (ignores empty tiles)
+positions :: Reversi -> [(Row, Col, Piece)]
+positions = S.foldrWithIndex position [] . tiles
+    where position _ Nothing acc = acc
+          position i (Just piece) acc = (row, col, piece) : acc
+              where (row, col) = _position i
+
 -- | Returns all the rows of the board
 rows :: Reversi -> [Tiles]
 rows game = map row [0..size-1]
@@ -101,6 +108,10 @@ get pos game = S.index (tiles game) (_index pos)
 -- | Returns the raw Seq index for a given row and col
 _index :: (Row, Col) -> Int
 _index (row, col) = row * size + col
+
+-- | Returns the position (row, col) for a raw Seq index
+_position :: Int -> (Row, Col)
+_position index = index `divMod` size
 
 format :: Reversi -> String
 format game = columnRow ++ formatRows game
