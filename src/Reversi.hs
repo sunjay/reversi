@@ -132,13 +132,14 @@ format game = columnRow ++ formatRows game
     where
         columnRow = (intercalate sep $ cell " " : (map (\c -> cell [c]) $ take size ['A'..'Z'])) ++ sep ++ "\n" ++ divider
         formatRows game' = concatMap formatRow $ zip [0..size] $ rows game'
-        formatRow (i, row) = (intercalate sep $ rowNumber i : (map (cell . formatTile) (toList row))) ++ sep ++ "\n" ++ divider
-        formatTile Nothing = " "
-        formatTile (Just piece) = show piece
+        formatRow (i, row) = (intercalate sep $ rowNumber i : (map (cell . formatTile i) (zip [0..] $ toList row))) ++ sep ++ "\n" ++ divider
+        formatTile rowIndex (colIndex, Nothing) = if elem (rowIndex, colIndex) valid then "_" else " "
+        formatTile _ (_, Just piece) = show piece
         cell content = " " ++ content ++ " "
         cellWidth = 3
         rowNumber index = cell $ show $ succ index
         sep = "|"
         -- the succ and +1 are because of the extra row number column
         divider = (take (succ size * cellWidth + size + 1) $ repeat '-') ++ "\n"
+        valid = validMoves game
 
