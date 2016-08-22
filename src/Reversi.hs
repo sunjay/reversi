@@ -64,16 +64,22 @@ cols game = map col [0..size-1]
 
 -- | Returns all diagonals of every size and direction
 diagonals :: Reversi -> [Tiles]
-diagonals game = map diagonalTLBR colsStartIndexes ++ map diagonalTLBR rowsStartIndexes ++ map diagonalTRBL colsStartIndexes ++ map diagonalTRBL rowsStartIndexes
+diagonals game = map (diagonalTLBR colDiagSize) colsStartIndexes
+                 ++ map (diagonalTLBR rowDiagSize) rowsStartIndexes
+                 ++ map (diagonalTRBL colDiagSize) colsStartIndexes
+                 ++ map (diagonalTRBL rowDiagSize) rowsStartIndexes
     -- You can derive these formulas by drawing out a matrix of the indexes
     -- and noticing that top-left to bottom-right (TLBR) diagonals go up
     -- by indexes of size + 1 and top-right to bottom-left (TRBL) diagonals
-    -- go up by indexes of size - 1 with (size - start - 1) starting index
-    where diagonalTLBR start = pickIndexes $ map (\i -> start + i * (size + 1)) [0..diagSize start]
-          diagonalTRBL start = pickIndexes $ map (\i -> size - start + i * (size - 1)) [0..diagSize start]
+    -- go up by indexes of size - 1
+    -- For TRBL diagonals, we have to start from the last column instead of
+    -- the first column so we use: size - 1 + start
+    where diagonalTLBR maxSize start = pickIndexes $ map (\i -> start + i * (size + 1)) [0..maxSize start - 1]
+          diagonalTRBL maxSize start = pickIndexes $ map (\i -> size - 1 + start + i * (size - 1)) [0..maxSize start - 1]
           pickIndexes indexes = S.fromList $ map (S.index tiles') indexes
           tiles' = tiles game
-          diagSize start = size - start
+          colDiagSize start = size - start
+          rowDiagSize start = colDiagSize $ start `div` size
           -- Start indexes in the first row
           colsStartIndexes = [0..size-minimumSize]
           -- Start indexes in the first column
