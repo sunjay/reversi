@@ -22,6 +22,7 @@ data Reversi = Reversi {
     currentPiece :: Piece
 }
 
+size :: Int
 size = 8
 
 -- | Returns a completely empty game board
@@ -40,6 +41,27 @@ new = set (middle', middle') PieceX $
     where middle = size `div` 2
           middle' = middle - 1
 
+-- | Returns all the valid moves that can be played
+validMoves :: Reversi -> [(Row, Col)]
+validMoves game = error "TODO"
+{-
+    Go through each row and column
+    Scan each row, column and arbitrarily sized diagonal
+    Look for places where the current piece and put themselves
+    Return a list of those places
+-}
+
+-- | Returns all the rows of the board
+rows :: Reversi -> [Tiles]
+rows game = map row [0..size-1]
+    where row i = S.take size $ S.drop (i * size) (tiles game)
+
+-- | Returns all the rows of the board
+cols :: Reversi -> [Tiles]
+cols game = map col [0..size-1]
+    where col index = S.fromList $ map (S.index tiles') [index,index+size..length tiles'-1]
+          tiles' = tiles game
+
 -- | Sets the given row and column index to the given piece and returns a new game
 set :: (Row, Col) -> Piece -> Reversi -> Reversi
 set pos piece game = game {
@@ -55,12 +77,11 @@ _index :: (Row, Col) -> Int
 _index (row, col) = row * size + col
 
 format :: Reversi -> String
-format game = columnRow ++ formatRows (tiles game)
+format game = columnRow ++ formatRows game
     where
         columnRow = (intercalate sep $ cell " " : (map (\c -> cell [c]) $ take size ['A'..'Z'])) ++ sep ++ "\n" ++ divider
-        formatRows tiles = concatMap formatRow $ zip [0..] $ rows $ toList tiles
-        rows tiles = map (\i -> take size $ drop (i * size) tiles) [0..size-1]
-        formatRow (i, row) = (intercalate sep $ rowNumber i : (map (cell . formatTile) row)) ++ sep ++ "\n" ++ divider
+        formatRows game' = concatMap formatRow $ zip [0..] $ rows game'
+        formatRow (i, row) = (intercalate sep $ rowNumber i : (map (cell . formatTile) (toList row))) ++ sep ++ "\n" ++ divider
         formatTile Nothing = " "
         formatTile (Just piece) = show piece
         cell content = " " ++ content ++ " "
