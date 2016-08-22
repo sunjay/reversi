@@ -5,6 +5,7 @@ import Data.Sequence (Seq)
 import Data.List (intercalate)
 import Data.Foldable (toList)
 import Data.Maybe (isJust, isNothing, fromJust)
+
 import System.Console.ANSI (
     setSGRCode,
     SGR(SetColor),
@@ -51,13 +52,32 @@ new = set (middle', middle') PieceX $
     where middle = size `div` 2
           middle' = middle - 1
 
+-- | Attempts to place the current piece at the given position, flip any
+-- | surrounding pieces and then return an updated board
+-- | Returns bottom (error) if no tiles were flipped
+move :: (Row, Col) -> Reversi -> Reversi
+move (row, col) game
+    | length pendingFlips > 0 = updatedGame {currentPiece = target}
+    | otherwise = error "Invalid move: Resulted in no flips"
+    where updatedGame = foldr flipPiece game pendingFlips
+          pendingFlips = foldl (flippablePositions (row, col)) [] _directions
+          flippablePositions (crow, ccol) fpositions (drow, dcol)
+              | nextPiece == Just target =
+                  flippablePositions next (next : fpositions) (drow, dcol)
+              | nextPiece == Just piece = fpositions
+              | otherwise = []
+              where next = (crow + drow, ccol + dcol)
+                    nextPiece = get next game
+          piece = currentPiece game
+          target = succ piece
+
 -- | Returns all the valid moves that can be played
 validMoves :: Reversi -> [(Row, Col)]
 validMoves game = map fromJust $ filter isJust $ map (uncurry findValid) searchSpace
     -- Find the position of each piece that is the same as currentPiece
     -- Go in each direction while the succ piece is being found
     -- If at least one succ piece is found, this is a valid move
-    where searchSpace = [((r, c), d) | (r, c, _) <- searchPieces, d <- directions]
+    where searchSpace = [((r, c), d) | (r, c, _) <- searchPieces, d <- _directions]
           findValid = searchDirection 0
           searchDirection count (row, col) (drow, dcol)
               | isNothing nextPiece =
@@ -68,11 +88,14 @@ validMoves game = map fromJust $ filter isJust $ map (uncurry findValid) searchS
               where next = (row + drow, col + dcol)
                     nextPiece = get next game
 
-          directions = [(x, y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0]
           searchPieces = filter isPiece $ positions game
           isPiece (_, _, p) = p == piece
           piece = currentPiece game
           target = succ piece
+
+-- All 8 directions
+_directions :: [(Row, Col)]
+_directions = [(x, y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0]
 
 -- | Returns the position of every piece (ignores empty tiles)
 positions :: Reversi -> [(Row, Col, Piece)]
@@ -117,6 +140,12 @@ diagonals game = map (diagonalTLBR colDiagSize) colsStartIndexes
           rowsStartIndexes = map (*size) [1..size-minimumSize]
           -- A diagonal less than this size isn't worth checking
           minimumSize = 3
+
+-- | Flips the piece at the given position, error if no piece is there
+flipPiece :: (Row, Col) -> Reversi -> Reversi
+flipPiece pos game = maybe (error "No piece to flip") flipper piece
+    where piece = get pos game
+          flipper p = set pos (succ p) game
 
 -- | Sets the given row and column index to the given piece and returns a new game
 set :: (Row, Col) -> Piece -> Reversi -> Reversi
