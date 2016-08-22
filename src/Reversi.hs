@@ -4,6 +4,7 @@ import qualified Data.Sequence as S
 import Data.Sequence (Seq)
 import Data.List (intercalate)
 import Data.Foldable (toList)
+import Data.Maybe (isJust, isNothing, fromJust)
 
 -- Row and Col indexes start at 0
 type Row = Int
@@ -43,13 +44,26 @@ new = set (middle', middle') PieceX $
 
 -- | Returns all the valid moves that can be played
 validMoves :: Reversi -> [(Row, Col)]
-validMoves game = error "TODO"
-{-
-    Go through each row and column
-    Scan each row, column and arbitrarily sized diagonal
-    Look for places where the current piece and put themselves
-    Return a list of those places
--}
+validMoves game = map fromJust $ filter isJust $ map (uncurry findValid) searchSpace
+    -- Find the position of each piece that is the same as currentPiece
+    -- Go in each direction while the succ piece is being found
+    -- If at least one succ piece is found, this is a valid move
+    where searchSpace = [((r, c), d) | (r, c, _) <- searchPieces, d <- directions]
+          findValid = searchDirection 0
+          searchDirection count (row, col) (drow, dcol)
+              | isNothing nextPiece =
+                  if count > 0 then Just next else Nothing
+              | nextPiece == Just target =
+                  searchDirection (succ count) next (drow, dcol)
+              | otherwise = Nothing
+              where next = (row + drow, col + dcol)
+                    nextPiece = get next game
+
+          directions = [(x, y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0]
+          searchPieces = filter isPiece $ positions game
+          isPiece (_, _, p) = p == piece
+          piece = currentPiece game
+          target = succ piece
 
 -- | Returns the position of every piece (ignores empty tiles)
 positions :: Reversi -> [(Row, Col, Piece)]
