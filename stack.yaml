@@ -66,5 +66,5 @@ extra-package-dbs: []
 # compiler-check: newer-minor
 ghc-options:
     # All packages
-    "*": -Wall
+    "*": -Wall -fno-warn-type-defaults
 
