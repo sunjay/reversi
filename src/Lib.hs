@@ -1,6 +1,6 @@
-module Lib
-    ( someFunc
-    ) where
+module Lib where
+
+import Reversi
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
