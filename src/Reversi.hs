@@ -9,19 +9,27 @@ import Data.Foldable (toList)
 type Row = Int
 type Col = Int
 
-data Piece = PieceX | PieceO deriving (Eq)
+data Piece = PieceX | PieceO deriving (Eq, Enum)
 
 instance Show Piece where
     show PieceX = "x"
     show PieceO = "o"
 
-type Reversi = Seq (Maybe Piece)
+type Tiles = Seq (Maybe Piece)
+
+data Reversi = Reversi {
+    tiles :: Tiles,
+    currentPiece :: Piece
+}
 
 size = 8
 
 -- | Returns a completely empty game board
 empty :: Reversi
-empty = S.fromList $ take (size * size) $ repeat Nothing
+empty = Reversi {
+    tiles = S.fromList $ take (size * size) $ repeat Nothing,
+    currentPiece = PieceX
+}
 
 -- | Returns a new game with the default pieces in place
 new :: Reversi
@@ -34,18 +42,20 @@ new = set (middle', middle') PieceX $
 
 -- | Sets the given row and column index to the given piece and returns a new game
 set :: (Row, Col) -> Piece -> Reversi -> Reversi
-set pos = S.update (_index pos) . Just
+set pos piece game = game {
+    tiles = S.update (_index pos) (Just piece) (tiles game)
+}
 
 -- | Gets the piece at the given row and column index
 get :: (Row, Col) -> Reversi -> Maybe Piece
-get pos tiles = S.index tiles $ _index pos
+get pos game = S.index (tiles game) (_index pos)
 
 -- | Returns the raw Seq index for a given row and col
 _index :: (Row, Col) -> Int
 _index (row, col) = row * size + col
 
 format :: Reversi -> String
-format tiles = columnRow ++ formatRows tiles
+format game = columnRow ++ formatRows (tiles game)
     where
         columnRow = (intercalate sep $ cell " " : (map (\c -> cell [c]) $ take size ['A'..'Z'])) ++ sep ++ "\n" ++ divider
         formatRows tiles = concatMap formatRow $ zip [0..] $ rows $ toList tiles
