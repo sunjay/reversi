@@ -17,7 +17,7 @@ import System.Console.ANSI (
 type Row = Int
 type Col = Int
 
-data Piece = PieceX | PieceO deriving (Eq, Enum)
+data Piece = PieceX | PieceO deriving (Eq)
 
 instance Show Piece where
     show PieceX = _color Red "\x25CF"
@@ -35,6 +35,13 @@ data Reversi = Reversi {
 
 size :: Int
 size = 8
+
+other :: Piece -> Piece
+other piece = if piece == PieceX then PieceO else PieceX
+
+isValidPos :: (Row, Col) -> Bool
+isValidPos (row, col) = (isValid row) && (isValid col)
+    where isValid x = x >= 0 && x < size
 
 -- | Returns a completely empty game board
 empty :: Reversi
@@ -59,9 +66,11 @@ move :: (Row, Col) -> Reversi -> Reversi
 move (row, col) game
     | length pendingFlips > 0 = updatedGame {currentPiece = target}
     | otherwise = error "Invalid move: Resulted in no flips"
-    where updatedGame = foldr flipPiece game pendingFlips
-          pendingFlips = foldl (flippablePositions (row, col)) [] _directions
+    where updatedGame = set (row, col) piece flippedGame
+          flippedGame = foldr flipPiece game pendingFlips
+          pendingFlips = concatMap (flippablePositions (row, col) []) _directions
           flippablePositions (crow, ccol) fpositions (drow, dcol)
+              | not $ isValidPos next = []
               | nextPiece == Just target =
                   flippablePositions next (next : fpositions) (drow, dcol)
               | nextPiece == Just piece = fpositions
@@ -69,17 +78,18 @@ move (row, col) game
               where next = (crow + drow, ccol + dcol)
                     nextPiece = get next game
           piece = currentPiece game
-          target = succ piece
+          target = other piece
 
 -- | Returns all the valid moves that can be played
 validMoves :: Reversi -> [(Row, Col)]
 validMoves game = map fromJust $ filter isJust $ map (uncurry findValid) searchSpace
     -- Find the position of each piece that is the same as currentPiece
-    -- Go in each direction while the succ piece is being found
-    -- If at least one succ piece is found, this is a valid move
+    -- Go in each direction while the other piece is being found
+    -- If at least one other piece is found, this is a valid move
     where searchSpace = [((r, c), d) | (r, c, _) <- searchPieces, d <- _directions]
           findValid = searchDirection 0
           searchDirection count (row, col) (drow, dcol)
+              | not $ isValidPos next = Nothing
               | isNothing nextPiece =
                   if count > 0 then Just next else Nothing
               | nextPiece == Just target =
@@ -91,7 +101,7 @@ validMoves game = map fromJust $ filter isJust $ map (uncurry findValid) searchS
           searchPieces = filter isPiece $ positions game
           isPiece (_, _, p) = p == piece
           piece = currentPiece game
-          target = succ piece
+          target = other piece
 
 -- All 8 directions
 _directions :: [(Row, Col)]
@@ -145,7 +155,7 @@ diagonals game = map (diagonalTLBR colDiagSize) colsStartIndexes
 flipPiece :: (Row, Col) -> Reversi -> Reversi
 flipPiece pos game = maybe (error "No piece to flip") flipper piece
     where piece = get pos game
-          flipper p = set pos (succ p) game
+          flipper p = set pos (other p) game
 
 -- | Sets the given row and column index to the given piece and returns a new game
 set :: (Row, Col) -> Piece -> Reversi -> Reversi
