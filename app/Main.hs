@@ -7,6 +7,8 @@ import Text.Read (readMaybe)
 import Data.Maybe (isNothing, fromJust)
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
 
+import qualified System.Random as Rand
+
 import qualified Reversi as R
 import qualified Reversi.AI as AI
 
@@ -20,7 +22,8 @@ main = do
 getAIMove :: GetMove
 getAIMove game = do
     putStrLn "AI is thinking...\n"
-    return $ Just $ AI.negamax game
+    gen <- Rand.newStdGen
+    return $ Just $ AI.random gen game
 
 getHumanMove :: GetMove
 getHumanMove _ = do

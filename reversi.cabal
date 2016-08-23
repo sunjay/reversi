@@ -16,7 +16,10 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Reversi, Reversi.AI
-  build-depends:       base >= 4.7 && < 5, containers, ansi-terminal
+  build-depends:       base >= 4.7 && < 5
+                     , containers
+                     , ansi-terminal
+                     , random
   default-language:    Haskell2010
 
 executable reversi
@@ -26,6 +29,7 @@ executable reversi
   build-depends:       base
                      , ansi-terminal
                      , reversi
+                     , random
   default-language:    Haskell2010
 
 test-suite reversi-test
