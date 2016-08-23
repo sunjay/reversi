@@ -14,33 +14,50 @@ import System.Console.ANSI (
     ColorIntensity(Vivid),
     Color(Red))
 
-import Reversi (Reversi, Row, Col)
+import Reversi (Reversi, Row, Col, Piece(PieceX, PieceO))
 import qualified Reversi as R
 
 main :: IO ()
 main = do
     hSetBuffering stdout NoBuffering
+    putStrLn $ R.format R.new
     play R.new
 
 play :: Reversi -> IO ()
 play game = do
-    putStrLn $ R.format game
-
+    -- Print the current game status
+    let (scoreX, scoreO) = R.score game
+    putStrLn $ "Score: " ++ (show PieceX) ++ " " ++ (show scoreX) ++ " | " ++ (show PieceO) ++ " " ++ (show scoreO)
     putStrLn $ "The current piece is: " ++ (show $ R.currentPiece game)
-    maybeMove <- getMove
+
+    !maybeMove <- getMove
     eof <- isEOF
     if eof then do
         -- Put an extra line to make sure the terminal's prompt is well aligned
         putStrLn ""
         return ()
     else do
-        game' <- makeMove game maybeMove
-        play game'
+        case makeMove game maybeMove of
+            Left error' -> do
+                putStrLn $ R.format game
+
+                setSGR [SetColor Foreground Vivid Red]
+                putStrLn error'
+                setSGR []
+                play game
+
+            Right game' -> do
+                if null $! R.validMoves game' then do
+                    putStrLn ""
+                    return ()
+                else do
+                    play game'
 
 getMove :: IO (Maybe (Row, Col))
 getMove = do
-    putStr "Enter your move (e.g. A1): "
-    line <- getLine
+    !line <- prompt "Enter your move (e.g. A1): "
+    putStrLn ""
+
     if length line /= 2 then do
         return Nothing
     else do
@@ -56,16 +73,15 @@ getMove = do
 validColumns :: [Char]
 validColumns = take R.size ['A'..'Z']
 
-makeMove :: Reversi -> Maybe (Row, Col) -> IO Reversi
-makeMove game Nothing = do
-    putStrLn "Invalid move format (enter something like '1A')"
-    return game
-makeMove game (Just move) = do
-    if elem move $ R.validMoves game then do
-        return $ R.move move game
-    else do
-        setSGR [SetColor Foreground Vivid Red]
-        putStrLn "Invalid move. Your move must flip at least one tile."
-        setSGR []
-        return game
+makeMove :: Reversi -> Maybe (Row, Col) -> Either String Reversi
+makeMove _ Nothing = Left "Invalid move format. Enter something like '1A'."
+makeMove game (Just move) =
+    if elem move $ R.validMoves game then
+        Right $ R.move move game
+    else
+        Left "Invalid move. Your move must flip at least one tile."
 
+prompt :: String -> IO String
+prompt message = do
+    putStr message
+    getLine
