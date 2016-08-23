@@ -6,6 +6,7 @@ import Data.List (elemIndex)
 import Text.Read (readMaybe)
 import Data.Maybe (isNothing, fromJust)
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
+import Control.Concurrent (threadDelay)
 
 import qualified System.Random as Rand
 
@@ -21,8 +22,11 @@ main = do
 
 getAIMove :: GetMove
 getAIMove game = do
-    putStrLn "AI is thinking...\n"
+    putStr "AI is thinking..."
     gen <- Rand.newStdGen
+    threadDelay 1000000 -- 1 second
+    -- to complete the line before and an additional one for formatting
+    putStrLn "\n"
     return $ Just $ AI.random gen game
 
 getHumanMove :: GetMove
