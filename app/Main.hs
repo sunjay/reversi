@@ -2,7 +2,8 @@
 
 module Main where
 
-import Data.List (elemIndex)
+import Data.Char (toUpper)
+import Data.List (elemIndex, sort)
 import Text.Read (readMaybe)
 import Data.Maybe (isNothing, fromJust)
 import System.IO (hSetBuffering, stdout, BufferMode(NoBuffering))
@@ -37,9 +38,11 @@ getHumanMove _ = do
     if length line /= 2 then do
         return Nothing
     else do
+        -- normalize line
+        let line' = reverse $ sort line
         -- Note that the row number is not the same as the row index!
-        let maybeRow = readMaybe (drop 1 line) :: Maybe R.Row
-            maybeCol = elemIndex (head line) validColumns
+        let maybeRow = readMaybe (drop 1 line') :: Maybe R.Row
+            maybeCol = elemIndex (toUpper (head line')) validColumns
 
         if isNothing maybeRow || (isNothing maybeCol) then do
             return Nothing
