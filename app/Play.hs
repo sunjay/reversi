@@ -23,7 +23,7 @@ play getXMove getOMove game = do
 loop :: GetMove -> GetMove -> Reversi -> IO ()
 loop getXMove getOMove game = do
     -- Print the current game status
-    let (scoreX, scoreO) = R.score game
+    let (scoreX, scoreO) = R.scores game
     putStrLn $ "Score: " ++ (show PieceX) ++ " " ++ (show scoreX) ++ " | " ++ (show PieceO) ++ " " ++ (show scoreO)
     putStrLn $ "The current piece is: " ++ (show $ R.currentPiece game)
 

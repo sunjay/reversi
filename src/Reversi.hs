@@ -60,8 +60,8 @@ new = set (middle', middle') PieceX $
           middle' = middle - 1
 
 -- | Gets the score for both pieces (PieceX score, PieceO score)
-score :: Reversi -> (Integer, Integer)
-score game = foldl counter (0, 0) $ tiles game
+scores :: Reversi -> (Integer, Integer)
+scores game = foldl counter (0, 0) $ tiles game
     where counter acc Nothing = acc
           counter (x, o) (Just PieceX) = (succ x, o)
           counter (x, o) (Just PieceO) = (x, succ o)
