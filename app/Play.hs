@@ -25,12 +25,18 @@ loop getXMove getOMove game = do
     -- Print the current game status
     let (scoreX, scoreO) = R.scores game
     putStrLn $ "Score: " ++ (show PieceX) ++ " " ++ (show scoreX) ++ " | " ++ (show PieceO) ++ " " ++ (show scoreO)
-    putStrLn $ "The current piece is: " ++ (show $ R.currentPiece game)
 
     if null $ R.validMoves game then do
+        putStr "The winner is: "
+        case compare scoreX scoreO of
+            LT -> putStrLn $ show PieceO
+            GT -> putStrLn $ show PieceX
+            EQ -> putStrLn $ "Tie"
         putStrLn ""
         return ()
     else do
+        putStrLn $ "The current piece is: " ++ (show $ R.currentPiece game)
+
         let getMove = if R.currentPiece game == PieceX then getXMove else getOMove
         !maybeMove <- getMove game
         case makeMove game maybeMove of
