@@ -18,16 +18,16 @@ import Play (GetMove, play)
 main :: IO ()
 main = do
     hSetBuffering stdout NoBuffering
-    play getHumanMove getAIMove R.new
+    play getHumanMove (getAIMove AI.negamax) R.new
 
-getAIMove :: GetMove
-getAIMove game = do
+getAIMove :: AI.AI -> GetMove
+getAIMove ai game = do
     putStr "AI is thinking..."
     gen <- Rand.newStdGen
     threadDelay 1000000 -- 1 second
     -- to complete the line before and an additional one for formatting
     putStrLn "\n"
-    return $ Just $ AI.random gen game
+    return $ Just $ ai gen game
 
 getHumanMove :: GetMove
 getHumanMove _ = do
