@@ -1,6 +1,9 @@
 module Main where
 
-import Lib
+import Reversi
+
+board :: Reversi
+board = new
 
 main :: IO ()
-main = someFunc
+main = putStrLn $ format new
