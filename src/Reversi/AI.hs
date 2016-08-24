@@ -21,13 +21,23 @@ random gen game = valid !! index
 
 -- | An AI that is so eager to pick a move, it just returns the first one
 eager :: AI
-eager _ game = head $ R.validMoves game
+eager _ = head . R.validMoves
 
 -- | Gets a move that the currentPiece should make for the given situation
 negamax :: AI
-negamax _ game = maximumBy compareMove $ R.validMoves game
-    where scoreMove move = score (R.currentPiece game) $ R.move move game
-          compareMove m1 m2 = compare (scoreMove m1) (scoreMove m2)
+negamax _ game = snd $ negamax' targetDepth (R.currentPiece game) (-1, -1) game
+    where targetDepth = 5 -- how many moves deep to think
+
+--TODO: Handle case where there are no valid moves even when depth > 0 (should return -Infinity)
+negamax' :: Int -> Piece -> (Row, Col) -> Reversi -> (Integer, (Row, Col))
+negamax' depth player lastMove game
+    | length valid > 0 && depth > 0 = maximumBy compareMoves $ map search valid
+    | otherwise = (score player game, lastMove)
+    where search move = (deepScore move (R.move move game), move)
+          deepScore move game' = maybeNegate game' $ fst $ negamax' (pred depth) player move game'
+          compareMoves (s1, _) (s2, _) = compare s1 s2
+          maybeNegate game' score' = if R.currentPiece game' == player then score' else (negate score')
+          valid = R.validMoves game
 
 -- | Scores the game for the given player
 score :: Piece -> Reversi -> Integer
