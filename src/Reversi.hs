@@ -39,7 +39,8 @@ size :: Int
 size = 8
 
 other :: Piece -> Piece
-other piece = if piece == PieceX then PieceO else PieceX
+other PieceX = PieceO
+other PieceO = PieceX
 
 isValidPos :: (Row, Col) -> Bool
 isValidPos (row, col) = (isValid row) && (isValid col)
