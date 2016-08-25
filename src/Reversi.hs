@@ -126,38 +126,6 @@ rows :: Reversi -> [Tiles]
 rows game = map row [0..size-1]
     where row i = S.take size $ S.drop (i * size) (tiles game)
 
--- | Returns all the rows of the board
-cols :: Reversi -> [Tiles]
-cols game = map col [0..size-1]
-    where col index = S.fromList $ map (S.index tiles') [index,index+size..length tiles'-1]
-          tiles' = tiles game
-
--- | Returns all diagonals of every size and direction
-diagonals :: Reversi -> [Tiles]
-diagonals game = map (diagonalTLBR colDiagSize) colsStartIndexes
-                 ++ map (diagonalTLBR rowDiagSize) rowsStartIndexes
-                 ++ map (diagonalTRBL colDiagSize) colsStartIndexes
-                 ++ map (diagonalTRBL rowDiagSize) rowsStartIndexes
-    -- You can derive these formulas by drawing out a matrix of the indexes
-    -- and noticing that top-left to bottom-right (TLBR) diagonals go up
-    -- by indexes of size + 1 and top-right to bottom-left (TRBL) diagonals
-    -- go up by indexes of size - 1
-    -- For TRBL diagonals, we have to start from the last column instead of
-    -- the first column so we use: size - 1 + start
-    where diagonalTLBR maxSize start = pickIndexes $ map (\i -> start + i * (size + 1)) [0..maxSize start - 1]
-          diagonalTRBL maxSize start = pickIndexes $ map (\i -> size - 1 + start + i * (size - 1)) [0..maxSize start - 1]
-          pickIndexes indexes = S.fromList $ map (S.index tiles') indexes
-          tiles' = tiles game
-          colDiagSize start = size - start
-          rowDiagSize start = colDiagSize $ start `div` size
-          -- Start indexes in the first row
-          colsStartIndexes = [0..size-minimumSize]
-          -- Start indexes in the first column
-          -- No need to get the first diagonal again (so start at 1)
-          rowsStartIndexes = map (*size) [1..size-minimumSize]
-          -- A diagonal less than this size isn't worth checking
-          minimumSize = 3
-
 -- | Flips the piece at the given position, error if no piece is there
 flipPiece :: (Row, Col) -> Reversi -> Reversi
 flipPiece pos game = maybe (error "No piece to flip") flipper piece
