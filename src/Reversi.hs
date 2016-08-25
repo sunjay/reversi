@@ -1,10 +1,12 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Reversi where
 
 import qualified Data.Sequence as S
 import Data.Sequence (Seq)
 import Data.List (intercalate)
 import Data.Foldable (toList)
-import Data.Maybe (isJust, isNothing, fromJust)
+import Data.Maybe (isNothing, mapMaybe)
 
 import System.Console.ANSI (
     setSGRCode,
@@ -63,15 +65,15 @@ new = set (middle', middle') PieceX $
 scores :: Reversi -> (Integer, Integer)
 scores game = foldl counter (0, 0) $ tiles game
     where counter acc Nothing = acc
-          counter (x, o) (Just PieceX) = (succ x, o)
-          counter (x, o) (Just PieceO) = (x, succ o)
+          counter (!x, !o) (Just PieceX) = (succ x, o)
+          counter (!x, !o) (Just PieceO) = (x, succ o)
 
 -- | Attempts to place the current piece at the given position, flip any
 -- | surrounding pieces and then return an updated board
 -- | Returns bottom (error) if no tiles were flipped
 move :: (Row, Col) -> Reversi -> Reversi
 move (row, col) game
-    | length pendingFlips > 0 = updatedGame {currentPiece = target}
+    | not $ null pendingFlips = updatedGame {currentPiece = target}
     | otherwise = error "Invalid move: Resulted in no flips"
     where updatedGame = set (row, col) piece flippedGame
           flippedGame = foldr flipPiece game pendingFlips
@@ -89,7 +91,7 @@ move (row, col) game
 
 -- | Returns all the valid moves that can be played
 validMoves :: Reversi -> [(Row, Col)]
-validMoves game = map fromJust $ filter isJust $ map (uncurry findValid) searchSpace
+validMoves game = mapMaybe (uncurry findValid) searchSpace
     -- Find the position of each piece that is the same as currentPiece
     -- Go in each direction while the other piece is being found
     -- If at least one other piece is found, this is a valid move
@@ -116,9 +118,9 @@ _directions = [(x, y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0]
 
 -- | Returns the position of every piece (ignores empty tiles)
 positions :: Reversi -> [(Row, Col, Piece)]
-positions = S.foldrWithIndex position [] . tiles
-    where position _ Nothing acc = acc
-          position i (Just piece) acc = (row, col, piece) : acc
+positions = mapMaybe position . (zip [0..]) . toList . tiles
+    where position (_, Nothing) = Nothing
+          position (i, Just piece) = Just (row, col, piece)
               where (row, col) = _position i
 
 -- | Returns all the rows of the board
