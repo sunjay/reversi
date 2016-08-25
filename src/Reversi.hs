@@ -46,7 +46,7 @@ isValidPos (row, col) = (isValid row) && (isValid col)
 -- | Returns a completely empty game board
 empty :: Reversi
 empty = Reversi {
-    tiles = S.fromList $ take (size * size) $ repeat Nothing,
+    tiles = S.fromList $ replicate (size * size) Nothing,
     currentPiece = PieceX
 }
 
@@ -163,6 +163,6 @@ format game = columnRow ++ formatRows game
         rowNumber index = cell $ show $ succ index
         sep = "\x2502"
         -- the succ and +1 are because of the extra row number column
-        divider = (take (succ size * cellWidth + size + 1) $ repeat '\x2500') ++ "\n"
+        divider = replicate (succ size * cellWidth + size + 1) '\x2500' ++ "\n"
         valid = validMoves game
 
