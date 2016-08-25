@@ -28,10 +28,9 @@ negamax :: AI
 negamax _ game = snd $ negamax' targetDepth (R.currentPiece game) (-1, -1) game
     where targetDepth = 5 -- how many moves deep to think
 
---TODO: Handle case where there are no valid moves even when depth > 0 (should return -Infinity)
 negamax' :: Int -> Piece -> (Row, Col) -> Reversi -> (Integer, (Row, Col))
 negamax' depth player lastMove game
-    | length valid > 0 && depth > 0 = maximumBy compareMoves $ map search valid
+    | depth > 0 = maximumBy compareMoves $ (-1000000, (-1, -1)) : (map search valid)
     | otherwise = (score player game, lastMove)
     where search move = (deepScore move (R.move move game), move)
           deepScore move game' = maybeNegate game' $ fst $ negamax' (pred depth) player move game'
