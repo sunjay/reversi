@@ -35,6 +35,6 @@ formatGameTree' originalDepth depth tree =
           game' = game tree
           applyIndent text = concatMap (\c -> if c == '\n' then '\n' : indent else [c]) text
           lastMove = R.lastMove $ game'
-          indent = concat $ replicate (originalDepth - depth) "    "
+          indent = concat $ replicate (originalDepth - depth) "|    "
           formattedChildren = if depth == 1 || (null $ children tree) then "" else concatMap (formatGameTree' originalDepth (pred depth)) $ children tree
 
