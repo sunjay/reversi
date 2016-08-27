@@ -16,6 +16,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Reversi, Reversi.AI
+  other-modules:       Reversi.AI.Random, Reversi.AI.Eager, Reversi.AI.Common, Reversi.AI.GameTree
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , ansi-terminal
