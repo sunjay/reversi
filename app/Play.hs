@@ -2,6 +2,8 @@
 
 module Play (GetMove, play) where
 
+import Data.Maybe (isJust, fromJust)
+
 import System.Console.ANSI (
     setSGR,
     SGR(SetColor),
@@ -25,6 +27,11 @@ loop getXMove getOMove game = do
     -- Print the current game status
     let (scoreX, scoreO) = R.scores game
     putStrLn $ "Score: " ++ (show PieceX) ++ " " ++ (show scoreX) ++ " | " ++ (show PieceO) ++ " " ++ (show scoreO)
+
+    if isJust $ R.lastMove game then
+        putStrLn $ "Last move: " ++ (formatMove $ fromJust $ R.lastMove game)
+    else
+        putStrLn "Let the game begin!"
 
     if null $ R.validMoves game then do
         putStr "The winner is: "
@@ -53,6 +60,9 @@ loop getXMove getOMove game = do
                 -- This empty line is placed where the error line would go
                 putStrLn ""
                 loop getXMove getOMove game'
+
+formatMove :: (Row, Col) -> String
+formatMove (row, col) = (['A'..'Z'] !! col) : (show $ succ row)
 
 makeMove :: Reversi -> Maybe (Row, Col) -> Either String Reversi
 makeMove _ Nothing = Left "Invalid move format. Enter something like 'A1'."

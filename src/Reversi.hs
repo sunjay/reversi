@@ -32,6 +32,7 @@ type Tiles = Seq (Maybe Piece)
 
 data Reversi = Reversi {
     tiles :: Tiles,
+    lastMove :: Maybe (Row, Col),
     currentPiece :: Piece
 }
 
@@ -50,6 +51,7 @@ isValidPos (row, col) = (isValid row) && (isValid col)
 empty :: Reversi
 empty = Reversi {
     tiles = S.fromList $ replicate (size * size) Nothing,
+    lastMove = Nothing,
     currentPiece = PieceX
 }
 
@@ -74,7 +76,7 @@ scores game = foldl counter (0, 0) $ tiles game
 -- | Returns bottom (error) if no tiles were flipped
 move :: (Row, Col) -> Reversi -> Reversi
 move (row, col) game
-    | not $ null pendingFlips = updatedGame {currentPiece = target}
+    | not $ null pendingFlips = updatedGame {currentPiece = target, lastMove = Just (row, col)}
     | otherwise = error "Invalid move: Resulted in no flips"
     where updatedGame = set (row, col) piece flippedGame
           flippedGame = foldr flipPiece game pendingFlips
