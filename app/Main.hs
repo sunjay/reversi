@@ -27,8 +27,9 @@ getAIMove ai game = do
     gen <- Rand.newStdGen
     threadDelay 1000000 -- 1 second
     -- to complete the line before and an additional one for formatting
+    let !move = ai gen game
     putStrLn "\n"
-    return $ Just $ ai gen game
+    return $ Just $ move
 
 getHumanMove :: GetMove
 getHumanMove _ = do
