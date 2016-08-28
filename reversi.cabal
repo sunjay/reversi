@@ -19,7 +19,6 @@ library
   other-modules:       Reversi.AI.Random, Reversi.AI.Eager, Reversi.AI.Negamax, Reversi.AI.Common, Reversi.AI.GameTree
   build-depends:       base >= 4.7 && < 5
                      , containers
-                     , ansi-terminal
                      , random
   default-language:    Haskell2010
 

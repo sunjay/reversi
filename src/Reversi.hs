@@ -8,13 +8,6 @@ import Data.List (intercalate)
 import Data.Foldable (toList)
 import Data.Maybe (isNothing, mapMaybe)
 
-import System.Console.ANSI (
-    setSGRCode,
-    SGR(SetColor),
-    ConsoleLayer(Foreground),
-    ColorIntensity(Vivid),
-    Color(Red, Blue, Yellow))
-
 -- Row and Col indexes start at 0
 type Row = Int
 type Col = Int
@@ -22,11 +15,11 @@ type Col = Int
 data Piece = PieceX | PieceO deriving (Eq)
 
 instance Show Piece where
-    show PieceX = _color Red "\x25CF"
-    show PieceO = _color Blue "\x25CF"
+    show PieceX = "x"
+    show PieceO = "o"
 
-_color :: Color -> [Char] -> [Char]
-_color color text = setSGRCode [SetColor Foreground Vivid color] ++ text ++ (setSGRCode [])
+validMoveMarker :: String
+validMoveMarker = "*"
 
 type Tiles = Seq (Maybe Piece)
 
@@ -161,7 +154,7 @@ format game = columnRow ++ formatRows game
         columnRow = (intercalate sep $ cell " " : (map (\c -> cell [c]) $ take size ['A'..'Z'])) ++ sep ++ "\n" ++ divider
         formatRows game' = concatMap formatRow $ zip [0..size] $ rows game'
         formatRow (i, row) = (intercalate sep $ rowNumber i : (map (cell . formatTile i) (zip [0..] $ toList row))) ++ sep ++ "\n" ++ divider
-        formatTile rowIndex (colIndex, Nothing) = if elem (rowIndex, colIndex) valid then _color Yellow "\x25CB" else " "
+        formatTile rowIndex (colIndex, Nothing) = if elem (rowIndex, colIndex) valid then validMoveMarker else " "
         formatTile _ (_, Just piece) = show piece
         cell content = " " ++ content ++ " "
         cellWidth = 3
