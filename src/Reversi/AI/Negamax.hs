@@ -1,5 +1,6 @@
 module Reversi.AI.Negamax (negamax) where
 
+import Data.Maybe (fromJust)
 import Data.Foldable (maximumBy)
 
 -- Lib imports
@@ -9,23 +10,24 @@ import qualified Reversi as R
 
 -- Reversi.AI imports
 import Reversi.AI.Common (AI)
+import Reversi.AI.GameTree (GameTreeNode, gameTree)
 
 import qualified Reversi.AI.GameTree as GT
 
 -- | Gets a move that the currentPiece should make for the given situation
 negamax :: AI
-negamax _ game = snd $ negamax' targetDepth (R.currentPiece game) (-1, -1) game
+negamax _ game = snd $ negamax' targetDepth (R.currentPiece game) $ gameTree game
     where targetDepth = 5 -- how many moves deep to think
 
-negamax' :: Int -> Piece -> (Row, Col) -> Reversi -> (Integer, (Row, Col))
-negamax' depth player game
-    | depth > 0 = maximumBy compareMoves $ (-1000000, (-1, -1)) : (map search valid)
-    | otherwise = score player game
-    where search move = (deepScore move (R.move move game), move)
-          deepScore move game' = maybeNegate game' $ fst $ negamax' (pred depth) player move game'
+negamax' :: Int -> Piece -> GameTreeNode -> (Integer, (Row, Col))
+negamax' depth player tree
+    | (depth == 0) || (null children) = (sign * (score player game), fromJust $ R.lastMove game)
+    | otherwise = maximumBy compareMoves $ map search children
+    where sign = if R.currentPiece game == player then 1 else -1
+          game = GT.game tree
+          search child = (negate $ fst $ negamax' (pred depth) player child, fromJust $ R.lastMove $ GT.game child)
           compareMoves (s1, _) (s2, _) = compare s1 s2
-          maybeNegate game' score' = if R.currentPiece game' == player then score' else (negate score')
-          valid = R.validMoves game
+          children = GT.children tree
 
 -- | Scores the game for the given player
 score :: Piece -> Reversi -> Integer
