@@ -4,8 +4,9 @@ module Play (GetMove, play) where
 
 import Data.Maybe (isJust, fromJust)
 
+import System.IO (stdout)
 import System.Console.ANSI (
-    setSGR,
+    hSupportsANSI,
     setSGRCode,
     SGR(SetColor),
     ConsoleLayer(Foreground),
@@ -25,9 +26,15 @@ play getXMove getOMove game = do
 
 loop :: GetMove -> GetMove -> Reversi -> IO ()
 loop getXMove getOMove game = do
+    supported <- supportsANSI
+
     -- Print the current game status
     let (scoreX, scoreO) = R.scores game
-    putStrLn $ "Score: " ++ pieceX ++ " " ++ (show scoreX) ++ " | " ++ pieceO ++ " " ++ (show scoreO)
+
+    if supported then
+        putStrLn $ "Score: " ++ pieceX ++ " " ++ (show scoreX) ++ " | " ++ pieceO ++ " " ++ (show scoreO)
+    else
+        putStrLn $ "Score: " ++ (show PieceX) ++ " " ++ (show scoreX) ++ " | " ++ (show PieceO) ++ " " ++ (show scoreO)
 
     if isJust $ R.lastMove game then
         putStrLn $ "Last move: " ++ (formatMove $ fromJust $ R.lastMove game)
@@ -43,7 +50,11 @@ loop getXMove getOMove game = do
         putStrLn ""
         return ()
     else do
-        putStrLn $ "The current piece is: " ++ (if R.currentPiece game == PieceX then pieceX else pieceO)
+        putStr $ "The current piece is: "
+        if supported then
+            putStrLn $ if R.currentPiece game == PieceX then pieceX else pieceO
+        else
+            putStrLn $ if R.currentPiece game == PieceX then (show PieceX) else (show PieceO)
 
         let getMove = if R.currentPiece game == PieceX then getXMove else getOMove
         !maybeMove <- getMove game
@@ -51,9 +62,11 @@ loop getXMove getOMove game = do
             Left error' -> do
                 putGame game
 
-                setSGR [SetColor Foreground Vivid Red]
-                putStrLn error'
-                setSGR []
+                if supported then
+                    putStrLn $ _color Red error'
+                else
+                    putStrLn error'
+
                 loop getXMove getOMove game
 
             Right game' -> do
@@ -63,16 +76,25 @@ loop getXMove getOMove game = do
                 loop getXMove getOMove game'
 
 putGame :: Reversi -> IO ()
-putGame game = putStrLn $ concatMap replacer $ R.format game
-    where replacer :: Char -> String
+putGame game = do
+    supported <- supportsANSI
+    if supported then do
+        putStrLn $ concatMap replacer formatted
+    else do
+        putStrLn formatted
+    where formatted = R.format game
+          replacer :: Char -> String
           replacer c =
             if | c == (head $ show PieceX) -> pieceX
                | c == (head $ show PieceO) -> pieceO
                | c == (head $ R.validMoveMarker) -> _color Yellow "\x25CB"
                | otherwise -> [c]
 
-_color :: Color -> [Char] -> [Char]
+_color :: Color -> String -> String
 _color color text = setSGRCode [SetColor Foreground Vivid color] ++ text ++ (setSGRCode [])
+
+supportsANSI :: IO Bool
+supportsANSI = hSupportsANSI stdout
 
 pieceX :: String
 pieceX = _color Red "\x25CF"
