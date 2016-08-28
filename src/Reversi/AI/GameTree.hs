@@ -1,7 +1,5 @@
 module Reversi.AI.GameTree where
 
-import Data.Maybe (isNothing, fromJust)
-
 import Reversi (Reversi)
 import qualified Reversi as R
 
@@ -34,7 +32,6 @@ formatGameTree' originalDepth depth tree =
     where currentLevel = applyIndent $ R.format game'
           game' = game tree
           applyIndent text = concatMap (\c -> if c == '\n' then '\n' : indent else [c]) text
-          lastMove = R.lastMove $ game'
           indent = concat $ replicate (originalDepth - depth) "|    "
           formattedChildren = if depth == 1 || (null $ children tree) then "" else concatMap (formatGameTree' originalDepth (pred depth)) $ children tree
 
