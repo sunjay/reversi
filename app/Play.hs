@@ -2,8 +2,6 @@
 
 module Play (GetMove, play) where
 
-import Data.Maybe (isJust, fromJust)
-
 import System.IO (stdout)
 import System.Console.ANSI (
     hSupportsANSI,
@@ -13,7 +11,7 @@ import System.Console.ANSI (
     ColorIntensity(Vivid),
     Color(Red, Blue, Yellow))
 
-import Reversi (Reversi, Row, Col, Piece(PieceX, PieceO))
+import Reversi (Reversi, Row, Col, Piece(PieceX, PieceO), ValidMoves(SkipTurn, ValidMoves))
 import qualified Reversi as R
 
 type GetMove = Reversi -> IO (Maybe (Row, Col))
@@ -24,56 +22,105 @@ play getXMove getOMove game = do
     putStrLn ""
     loop getXMove getOMove game
 
+--TODO: Refactor this to accept a parameter record with the two get move functions and supported
 loop :: GetMove -> GetMove -> Reversi -> IO ()
 loop getXMove getOMove game = do
     supported <- supportsANSI
 
     -- Print the current game status
-    let (scoreX, scoreO) = R.scores game
+    putScores (R.scores game) supported
 
+    putLastMove $ R.lastMove game
+
+    case R.validMoves game of
+        SkipTurn -> skipTurn getXMove getOMove game supported
+        ValidMoves moves -> maybeContinueGame getXMove getOMove game moves supported
+
+skipTurn :: GetMove -> GetMove -> Reversi -> Bool -> IO ()
+skipTurn getXMove getOMove game supported = do
+    putCurrentPiece (R.currentPiece game) supported
+    putStr "No valid moves, skipping turn. Press enter to continue... "
+    !_ <- getLine
+
+    let game' = R.skipTurn game
+    putGame game'
+    -- This empty line is placed where the error line would go
+    putStrLn ""
+
+    loop getXMove getOMove game'
+
+maybeContinueGame :: GetMove -> GetMove -> Reversi -> [(Row, Col)] -> Bool -> IO ()
+maybeContinueGame getXMove getOMove game validMoves supported =
+    if null $ validMoves then do
+        putWinner (R.scores game)
+        return ()
+
+    else do
+        putCurrentPiece (R.currentPiece game) supported
+
+        let getMove = case R.currentPiece game of
+                PieceX -> getXMove
+                PieceO -> getOMove
+
+        !maybeMove <- getMove game
+        attemptMove getXMove getOMove game maybeMove supported
+
+attemptMove :: GetMove -> GetMove -> Reversi -> Maybe (Row, Col) -> Bool -> IO ()
+attemptMove getXMove getOMove game maybeMove supported =
+    case makeMove game maybeMove of
+        Left error' -> do
+            putGame game
+            putError error' supported
+
+            loop getXMove getOMove game
+
+        Right game' -> do
+            putGame game'
+            -- This empty line is placed where the error line would go
+            putStrLn ""
+
+            loop getXMove getOMove game'
+
+putError :: String -> Bool -> IO ()
+putError error' supported =
+    if supported then
+        putStrLn $ _color Red error'
+    else
+        putStrLn error'
+
+
+putCurrentPiece :: Piece -> Bool -> IO ()
+putCurrentPiece piece supported = do
+    putStr "The current piece is: "
+    let formattedPieceX = if supported then pieceX else (show PieceX)
+        formattedPieceO = if supported then pieceO else (show PieceO)
+
+    putStrLn $ case piece of
+        PieceX -> formattedPieceX
+        PieceO -> formattedPieceO
+
+putLastMove :: Maybe (Row, Col) -> IO ()
+putLastMove lastMove =
+    putStrLn $ case lastMove of
+        Nothing -> "Let the game begin!"
+        Just move -> "Last move: " ++ (formatMove move)
+
+putWinner :: (Integer, Integer) -> IO ()
+putWinner (scoreX, scoreO) = do
+    putStr "The winner is: "
+    case compare scoreX scoreO of
+        LT -> putStrLn $ show PieceO
+        GT -> putStrLn $ show PieceX
+        EQ -> putStrLn $ "Tie"
+    -- This line is where the user usually enters a move
+    putStrLn ""
+
+putScores :: (Integer, Integer) -> Bool -> IO ()
+putScores (scoreX, scoreO) supported =
     if supported then
         putStrLn $ "Score: " ++ pieceX ++ " " ++ (show scoreX) ++ " | " ++ pieceO ++ " " ++ (show scoreO)
     else
         putStrLn $ "Score: " ++ (show PieceX) ++ " " ++ (show scoreX) ++ " | " ++ (show PieceO) ++ " " ++ (show scoreO)
-
-    if isJust $ R.lastMove game then
-        putStrLn $ "Last move: " ++ (formatMove $ fromJust $ R.lastMove game)
-    else
-        putStrLn "Let the game begin!"
-
-    if null $ R.validMoves game then do
-        putStr "The winner is: "
-        case compare scoreX scoreO of
-            LT -> putStrLn $ show PieceO
-            GT -> putStrLn $ show PieceX
-            EQ -> putStrLn $ "Tie"
-        putStrLn ""
-        return ()
-    else do
-        putStr $ "The current piece is: "
-        if supported then
-            putStrLn $ if R.currentPiece game == PieceX then pieceX else pieceO
-        else
-            putStrLn $ if R.currentPiece game == PieceX then (show PieceX) else (show PieceO)
-
-        let getMove = if R.currentPiece game == PieceX then getXMove else getOMove
-        !maybeMove <- getMove game
-        case makeMove game maybeMove of
-            Left error' -> do
-                putGame game
-
-                if supported then
-                    putStrLn $ _color Red error'
-                else
-                    putStrLn error'
-
-                loop getXMove getOMove game
-
-            Right game' -> do
-                putGame game'
-                -- This empty line is placed where the error line would go
-                putStrLn ""
-                loop getXMove getOMove game'
 
 putGame :: Reversi -> IO ()
 putGame game = do
@@ -107,8 +154,11 @@ formatMove (row, col) = (['A'..'Z'] !! col) : (show $ succ row)
 makeMove :: Reversi -> Maybe (Row, Col) -> Either String Reversi
 makeMove _ Nothing = Left "Invalid move format. Enter something like 'A1'."
 makeMove game (Just move) =
-    if elem move $ R.validMoves game then
+    if elem move valid then
         Right $ R.move move game
     else
         Left "Invalid move. Your move must flip at least one tile."
+    where valid = case R.validMoves game of
+              SkipTurn -> []
+              ValidMoves moves -> moves
 

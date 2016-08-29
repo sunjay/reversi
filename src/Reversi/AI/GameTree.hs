@@ -1,6 +1,6 @@
 module Reversi.AI.GameTree where
 
-import Reversi (Reversi)
+import Reversi (Reversi, ValidMoves(SkipTurn, ValidMoves))
 import qualified Reversi as R
 
 -- | Represents a single node in a negamax tree
@@ -20,7 +20,9 @@ data GameTreeNode = GameTreeNode {
 gameTree :: Reversi -> GameTreeNode
 gameTree game' = GameTreeNode {
     game = game',
-    children = map (gameTree . (flip R.move) game') $ R.validMoves game'
+    children = case R.validMoves game' of
+        SkipTurn -> [gameTree $ R.skipTurn game']
+        ValidMoves moves -> map (gameTree . (flip R.move) game') moves
 }
 
 formatGameTree :: Int -> GameTreeNode -> String

@@ -1,6 +1,27 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Reversi where
+module Reversi (
+    Row, Col,
+    Piece(PieceX, PieceO),
+    ValidMoves(SkipTurn, ValidMoves),
+    validMoveMarker,
+    Tiles,
+    Reversi,
+    tiles,
+    lastMove,
+    currentPiece,
+    size,
+    other,
+    skipTurn,
+    empty,
+    new,
+    scores,
+    move,
+    validMoves,
+    set,
+    get,
+    format
+) where
 
 import qualified Data.Sequence as S
 import Data.Sequence (Seq)
@@ -18,6 +39,8 @@ instance Show Piece where
     show PieceX = "x"
     show PieceO = "o"
 
+data ValidMoves = SkipTurn | ValidMoves [(Row, Col)]
+
 validMoveMarker :: String
 validMoveMarker = "*"
 
@@ -29,16 +52,24 @@ data Reversi = Reversi {
     currentPiece :: Piece
 }
 
+-- The horizontal and vertical dimension of the board
 size :: Int
 size = 8
 
+-- | Returns the opposite piece from the given piece
 other :: Piece -> Piece
 other PieceX = PieceO
 other PieceO = PieceX
 
+-- | Returns whether the given position is valid on the board
 isValidPos :: (Row, Col) -> Bool
 isValidPos (row, col) = (isValid row) && (isValid col)
     where isValid x = x >= 0 && x < size
+
+-- | Skips the turn of the current piece and returns the same game
+-- | with the other piece as the current piece
+skipTurn :: Reversi -> Reversi
+skipTurn game = game { currentPiece = other $ currentPiece game }
 
 -- | Returns a completely empty game board
 empty :: Reversi
@@ -85,9 +116,17 @@ move (row, col) game
           piece = currentPiece game
           target = other piece
 
+-- | Returns the valid moves available for a given game's current piece
+-- | If there are no moves leftover for that piece but the next piece can
+-- | still proceed, returns SkipTurn
+validMoves :: Reversi -> ValidMoves
+validMoves game = if null valid && (not $ null otherValidMoves) then SkipTurn else (ValidMoves valid)
+    where valid = validMoves' game
+          otherValidMoves = validMoves' $ skipTurn game
+
 -- | Returns all the valid moves that can be played
-validMoves :: Reversi -> [(Row, Col)]
-validMoves game = mapMaybe (uncurry findValid) searchSpace
+validMoves' :: Reversi -> [(Row, Col)]
+validMoves' game = mapMaybe (uncurry findValid) searchSpace
     -- Find the position of each piece that is the same as currentPiece
     -- Go in each direction while the other piece is being found
     -- If at least one other piece is found, this is a valid move
@@ -162,5 +201,7 @@ format game = columnRow ++ formatRows game
         sep = "\x2502"
         -- the succ and +1 are because of the extra row number column
         divider = replicate (succ size * cellWidth + size + 1) '\x2500' ++ "\n"
-        valid = validMoves game
+        valid = case validMoves game of
+            SkipTurn -> []
+            ValidMoves moves -> moves
 
