@@ -41,6 +41,8 @@ skipTurn getXMove getOMove game supported = do
     putCurrentPiece (R.currentPiece game) supported
     putStr "No valid moves, skipping turn. Press enter to continue... "
     !_ <- getLine
+    -- Empty line to avoid running into the next printed game
+    putStrLn ""
 
     let game' = R.skipTurn game
     putGame game'
@@ -102,7 +104,7 @@ putCurrentPiece piece supported = do
 putLastMove :: Maybe (Row, Col) -> IO ()
 putLastMove lastMove =
     putStrLn $ case lastMove of
-        Nothing -> "Let the game begin!"
+        Nothing -> "Last move: (none)"
         Just move -> "Last move: " ++ (formatMove move)
 
 putWinner :: (Integer, Integer) -> Bool -> IO ()

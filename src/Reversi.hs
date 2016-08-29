@@ -69,7 +69,10 @@ isValidPos (row, col) = (isValid row) && (isValid col)
 -- | Skips the turn of the current piece and returns the same game
 -- | with the other piece as the current piece
 skipTurn :: Reversi -> Reversi
-skipTurn game = game { currentPiece = other $ currentPiece game }
+skipTurn game = game {
+    currentPiece = other $ currentPiece game,
+    lastMove = Nothing
+}
 
 -- | Returns a completely empty game board
 empty :: Reversi
