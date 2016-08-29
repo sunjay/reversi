@@ -52,7 +52,7 @@ skipTurn getXMove getOMove game supported = do
 maybeContinueGame :: GetMove -> GetMove -> Reversi -> [(Row, Col)] -> Bool -> IO ()
 maybeContinueGame getXMove getOMove game validMoves supported =
     if null $ validMoves then do
-        putWinner (R.scores game)
+        putWinner (R.scores game) supported
         return ()
 
     else do
@@ -105,13 +105,16 @@ putLastMove lastMove =
         Nothing -> "Let the game begin!"
         Just move -> "Last move: " ++ (formatMove move)
 
-putWinner :: (Integer, Integer) -> IO ()
-putWinner (scoreX, scoreO) = do
+putWinner :: (Integer, Integer) -> Bool -> IO ()
+putWinner (scoreX, scoreO) supported = do
     putStr "The winner is: "
+    let formattedPieceX = if supported then pieceX else (show PieceX)
+        formattedPieceO = if supported then pieceO else (show PieceO)
+
     case compare scoreX scoreO of
-        LT -> putStrLn $ show PieceO
-        GT -> putStrLn $ show PieceX
-        EQ -> putStrLn $ "Tie"
+        LT -> putStrLn formattedPieceO
+        GT -> putStrLn formattedPieceX
+        EQ -> putStrLn "Tie"
     -- This line is where the user usually enters a move
     putStrLn ""
 
