@@ -3,7 +3,10 @@
 module Reversi.AI.Negamax (negamax) where
 
 import Data.Maybe (fromJust)
-import Data.Foldable (maximumBy)
+
+import System.Random (StdGen)
+
+import qualified System.Random as Rand
 
 -- Lib imports
 import Reversi (Reversi, Row, Col, Piece(PieceX, PieceO))
@@ -18,17 +21,22 @@ import qualified Reversi.AI.GameTree as GT
 
 -- | Gets a move that the currentPiece should make for the given situation
 negamax :: AI
-negamax _ game = fromJust $ snd $ negamax' targetDepth (R.currentPiece game) $ gameTree game
+negamax rng game = fromJust $ snd $ fst $ negamax' rng targetDepth (R.currentPiece game) $ gameTree game
     where targetDepth = 5 -- how many moves deep to think
 
-negamax' :: Int -> Piece -> GameTreeNode -> (Integer, Maybe (Row, Col))
-negamax' depth player tree
-    | (depth == 0) || (null children) = (sign * (score player game), R.lastMove game)
-    | otherwise = maximumBy compareMoves $ map search children
-    where sign = if R.currentPiece game == player then 1 else -1
+negamax' :: StdGen -> Int -> Piece -> GameTreeNode -> ((Integer, Maybe (Row, Col)), StdGen)
+negamax' rng depth player tree
+    | (depth == 0) || (null children) = ((sign * (score player game), R.lastMove game), rng)
+    | otherwise = (options !! picked, rng'')
+    where (picked, rng'') = Rand.randomR (0, pred $ length options) rng'
+          options = filter (\(s, _) -> s == maxScore) childScores
+          maxScore = maximum $ map fst childScores
+          (childScores, rng') = foldl search ([], rng) children
+          sign = if R.currentPiece game == player then 1 else -1
           game = GT.game tree
-          search child = (negate $ fst $ negamax' (pred depth) player child, R.lastMove $ GT.game child)
-          compareMoves (s1, _) (s2, _) = compare s1 s2
+          search (scores, crng) child = (deepScore : scores, crng')
+              where deepScore = (negate $ fst deeper, R.lastMove $ GT.game child)
+                    (deeper, crng') = negamax' crng (pred depth) player child
           children = GT.children tree
 
 -- | Scores the game for the given player
