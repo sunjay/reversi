@@ -18,6 +18,9 @@ module Reversi (
     scores,
     move,
     validMoves,
+    sides,
+    corners,
+    positions,
     set,
     get,
     format
@@ -150,16 +153,32 @@ validMoves' game = mapMaybe (uncurry findValid) searchSpace
           piece = currentPiece game
           target = other piece
 
--- All 8 directions
+-- | All 8 directions
 _directions :: [(Row, Col)]
 _directions = [(x, y) | x <- [-1..1], y <- [-1..1], x /= 0 || y /= 0]
 
+-- | Returns all side-only pieces (not corners) (ignores empty tiles)
+sides :: Reversi -> [(Row, Col, Piece)]
+sides game = mapMaybe (maybePosition game) sidePositions
+    -- Could have just filtered positions, but this saves a lot of computation
+    where sidePositions = concat [[(x, 0), (0, x), (x, size-1), (size-1, x)] | x <- [1..size-2]]
+
+-- Returns all corner pieces (ignores empty tiles)
+corners :: Reversi -> [(Row, Col, Piece)]
+corners game = mapMaybe (maybePosition game) cornerPositions
+    where cornerPositions = [(x * (size-1), y * (size-1)) | x <- [0..1], y <- [0..1]]
+
 -- | Returns the position of every piece (ignores empty tiles)
 positions :: Reversi -> [(Row, Col, Piece)]
-positions = mapMaybe position . (zip [0..]) . toList . tiles
-    where position (_, Nothing) = Nothing
-          position (i, Just piece) = Just (row, col, piece)
-              where (row, col) = _position i
+positions game = mapMaybe (maybePosition game) allPositions
+    where allPositions = [(x, y) | x <- [0..size-1], y <- [0..size-1]]
+
+-- | Looks up a piece and returns Just (row, col, piece) if that tile
+-- | is not empty
+maybePosition :: Reversi -> (Row, Col) -> Maybe (Row, Col, Piece)
+maybePosition game (r, c) = case get (r, c) game of
+    Nothing -> Nothing
+    Just p -> Just (r, c, p)
 
 -- | Returns all the rows of the board
 rows :: Reversi -> [Tiles]
