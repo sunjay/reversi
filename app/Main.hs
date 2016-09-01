@@ -19,7 +19,7 @@ import Play (GetMove, play)
 main :: IO ()
 main = do
     hSetBuffering stdout NoBuffering
-    play getHumanMove (getAIMove AI.negamax) R.new
+    play getHumanMove (getAIMove $ AI.negamax 5) R.new
 
 getAIMove :: AI.AI -> GetMove
 getAIMove ai game = do

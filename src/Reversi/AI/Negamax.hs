@@ -18,9 +18,8 @@ import Reversi.AI.GameTree (GameTreeNode, gameTree)
 import qualified Reversi.AI.GameTree as GT
 
 -- | Gets a move that the currentPiece should make for the given situation
-negamax :: AI
-negamax rng game = fromJust $ snd $ negamax' (fst $ Rand.random rng) targetDepth (R.currentPiece game) $ gameTree game
-    where targetDepth = 5 -- how many moves deep to think
+negamax :: Int -> AI
+negamax targetDepth rng game = fromJust $ snd $ negamax' (fst $ Rand.random rng) targetDepth (R.currentPiece game) $ gameTree game
 
 negamax' :: Int -> Int -> Piece -> GameTreeNode -> (Integer, Maybe (Row, Col))
 negamax' seed depth player tree
