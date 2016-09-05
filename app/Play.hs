@@ -1,5 +1,7 @@
 {-# LANGUAGE BangPatterns, MultiWayIf #-}
 
+--TODO: This code could use some separation between the mainloop code and the rendering code. It's "good enough" for now, but growing this code is quite cumbersome
+
 module Play (GetMove, play) where
 
 import System.IO (stdout)
@@ -14,18 +16,30 @@ import System.Console.ANSI (
 import Reversi (Reversi, Row, Col, Piece(PieceX, PieceO), ValidMoves(SkipTurn, ValidMoves))
 import qualified Reversi as R
 
+data Options = Options {
+    enableANSI :: Bool,
+    xmove :: GetMove,
+    omove :: GetMove
+}
+
 type GetMove = Reversi -> IO (Maybe (Row, Col))
 
 play :: GetMove -> GetMove -> Reversi -> IO ()
 play getXMove getOMove game = do
     putGame game
     putStrLn ""
-    loop getXMove getOMove game
 
---TODO: Refactor this to accept a parameter record with the two get move functions and supported
-loop :: GetMove -> GetMove -> Reversi -> IO ()
-loop getXMove getOMove game = do
     supported <- supportsANSI
+    let opts = Options {
+        enableANSI = supported,
+        xmove = getXMove,
+        omove = getOMove
+    }
+    loop opts game
+
+loop :: Options -> Reversi -> IO ()
+loop opts game = do
+    let supported = enableANSI opts
 
     -- Print the current game status
     putScores (R.scores game) supported
@@ -33,11 +47,11 @@ loop getXMove getOMove game = do
     putLastMove $ R.lastMove game
 
     case R.validMoves game of
-        SkipTurn -> skipTurn getXMove getOMove game supported
-        ValidMoves moves -> maybeContinueGame getXMove getOMove game moves supported
+        SkipTurn -> skipTurn opts game supported
+        ValidMoves moves -> maybeContinueGame opts game moves supported
 
-skipTurn :: GetMove -> GetMove -> Reversi -> Bool -> IO ()
-skipTurn getXMove getOMove game supported = do
+skipTurn :: Options -> Reversi -> Bool -> IO ()
+skipTurn opts game supported = do
     putCurrentPiece (R.currentPiece game) supported
     putStr "No valid moves, skipping turn. Press enter to continue... "
     !_ <- getLine
@@ -49,10 +63,10 @@ skipTurn getXMove getOMove game supported = do
     -- This empty line is placed where the error line would go
     putStrLn ""
 
-    loop getXMove getOMove game'
+    loop opts game'
 
-maybeContinueGame :: GetMove -> GetMove -> Reversi -> [(Row, Col)] -> Bool -> IO ()
-maybeContinueGame getXMove getOMove game validMoves supported =
+maybeContinueGame :: Options -> Reversi -> [(Row, Col)] -> Bool -> IO ()
+maybeContinueGame opts game validMoves supported =
     if null $ validMoves then do
         putWinner (R.scores game) supported
         return ()
@@ -61,27 +75,27 @@ maybeContinueGame getXMove getOMove game validMoves supported =
         putCurrentPiece (R.currentPiece game) supported
 
         let getMove = case R.currentPiece game of
-                PieceX -> getXMove
-                PieceO -> getOMove
+                PieceX -> xmove opts
+                PieceO -> omove opts
 
         !maybeMove <- getMove game
-        attemptMove getXMove getOMove game maybeMove supported
+        attemptMove opts game maybeMove supported
 
-attemptMove :: GetMove -> GetMove -> Reversi -> Maybe (Row, Col) -> Bool -> IO ()
-attemptMove getXMove getOMove game maybeMove supported =
+attemptMove :: Options -> Reversi -> Maybe (Row, Col) -> Bool -> IO ()
+attemptMove opts game maybeMove supported =
     case makeMove game maybeMove of
         Left error' -> do
             putGame game
             putError error' supported
 
-            loop getXMove getOMove game
+            loop opts game
 
         Right game' -> do
             putGame game'
             -- This empty line is placed where the error line would go
             putStrLn ""
 
-            loop getXMove getOMove game'
+            loop opts game'
 
 putError :: String -> Bool -> IO ()
 putError error' supported =
